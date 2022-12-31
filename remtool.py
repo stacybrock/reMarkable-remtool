@@ -17,6 +17,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import uuid
 from collections import deque
@@ -122,18 +123,24 @@ class reMarkable:
         else:
             args.append(cmd)
 
-        try:
-            if pipe_in:
-                sp = subprocess.Popen(args, stdin=subprocess.PIPE,
-                                      stdout=subprocess.PIPE,
-                                      encoding='utf-8')
-                result, err = sp.communicate(cmd)
-            else:
+        if pipe_in:
+            sp = subprocess.Popen(args,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  encoding='utf-8')
+            result, err = sp.communicate(cmd)
+            if sp.returncode > 0:
+                print(f"ERROR: {err.strip()}")
+                sys.exit(1)
+        else:
+            try:
                 out = subprocess.run(args, capture_output=True, check=True,
                                      encoding='utf-8')
                 result = out.stdout
-        except subprocess.CalledProcessError as e:
-            pp(e)
+            except subprocess.CalledProcessError as e:
+                print(f"ERROR: {e}")
+                sys.exit(1)
         return result
 
     def _scp(self, source: list, dest: str):
@@ -145,10 +152,8 @@ class reMarkable:
             subprocess.run(args, capture_output=True, check=True,
                            encoding='utf-8')
         except subprocess.CalledProcessError as e:
-            print(e)
-            print(e.stderr)
-            return None
-
+            print(f"ERROR: {e}")
+            sys.exit(1)
         return True
 
     def _get_metadata(self):
@@ -171,9 +176,9 @@ do
 done
 echo ']'
         '''.strip()
-        r = json.loads(self._ssh(cmd, pipe_in=True))
-        # pp(r)
-        return r
+        raw_meta = self._ssh(cmd, pipe_in=True)
+        json_meta = json.loads(raw_meta)
+        return json_meta
 
 
 @dataclass
