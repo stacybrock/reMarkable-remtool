@@ -1,0 +1,3 @@
+[main]
+# IP, hostname, or SSH alias of reMarkable device
+reMarkableHostname=CHANGEME

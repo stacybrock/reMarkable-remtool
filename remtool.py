@@ -12,6 +12,7 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
 """
+import configparser
 import json
 import os
 import shutil
@@ -29,8 +30,11 @@ import pprint
 pp_ = pprint.PrettyPrinter(indent=2)
 pp = pp_.pprint
 
+# read config file
+config = configparser.ConfigParser()
+config.read('remtool.cfg')
 CONFIG = {}
-CONFIG['REM_HOSTNAME'] = 'remarkable'
+CONFIG['SSH_HOSTNAME'] = config['main']['reMarkableHostname']
 
 
 class reMarkable:
@@ -352,7 +356,7 @@ class ContentTree:
 if __name__ == "__main__":
     args = docopt(__doc__, default_help=True, version='remtool 0.1')
 
-    reM = reMarkable(CONFIG['REM_HOSTNAME'])
+    reM = reMarkable(CONFIG['SSH_HOSTNAME'])
 
     if args['put']:
         reM.put(args['FILE'], args['FOLDER'])
