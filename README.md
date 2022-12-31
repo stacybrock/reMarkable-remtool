@@ -11,6 +11,14 @@ A simple CLI tool for transferring files to a reMarkable 2 tablet
 
 **NOTE:** This tool has only been tested with python 3.8 and reMarkable 3.0.4.
 
+## Configuration
+
+Copy `remtool.cfg-dist` to `remtool.cfg` and edit.
+
+|Config Option|Purpose|
+-|-
+`reMarkableHostname`|IP, hostname, or SSH alias of reMarkable device
+
 ## Usage
 
 ```
