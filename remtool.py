@@ -30,9 +30,11 @@ import pprint
 pp_ = pprint.PrettyPrinter(indent=2)
 pp = pp_.pprint
 
+SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
+
 # read config file
 config = configparser.ConfigParser()
-config.read('remtool.cfg')
+config.read(f"{SCRIPTPATH}/remtool.cfg")
 CONFIG = {}
 CONFIG['SSH_HOSTNAME'] = config['main']['reMarkableHostname']
 
