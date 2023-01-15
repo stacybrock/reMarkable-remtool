@@ -59,9 +59,18 @@ class reMarkable:
             print(f"Folder '{folder}' does not exist.")
             return
 
+        # check source for valid file type
+        source_type = filename.suffix.lstrip('.').lower()
+        if source_type not in ['pdf', 'epub']:
+            # this is a simple file extension check that could be improved
+            # in the future
+            raise RuntimeError('Filetype not supported. '
+                               '(Valid filetypes: pdf, epub)')
+
         # check if file already exists at this target path
         target = self.ct.get_node_by_path(path)
         if target is None:
+            # generate minimum required metadata
             now = str(int(time()*1000))
             new_meta = Metadata(deleted=False,
                                 last_modified=now,
@@ -75,7 +84,8 @@ class reMarkable:
                                 type_='DocumentType',
                                 version=0,
                                 visible_name=filename.stem)
-            new_node = Node(uuid.uuid4(), new_meta)
+            new_node = Node(uuid=uuid.uuid4(), metadata=new_meta,
+                            filetype=source_type)
             parent.add_child(new_node)
 
             # render node as files on disk and send them to the device
@@ -230,10 +240,13 @@ class Metadata:
 
 
 class Node:
-    def __init__(self, uuid: str, metadata: Metadata=None, children: list=None):
+    def __init__(self, uuid: str, metadata: Metadata=None, filetype: str=None,
+                 children: list=None):
         self.uuid = uuid
         self.metadata = metadata
+        self.filetype = filetype
         self.path = ''
+        self.content = {}
         if children is None:
             self.children = []
 
@@ -261,19 +274,38 @@ class Node:
         with open(f"{metafile}", 'w') as METAFILE:
             json.dump(self.metadata.as_dict(), METAFILE, indent=4)
 
+        if not self.content:
+            content = self._default_content()
         with open(f"{contentfile}", 'w') as CONTENTFILE:
-            json.dump({}, CONTENTFILE, indent=4)
+            json.dump(content, CONTENTFILE, indent=4)
 
         if not self.is_folder():
             os.makedirs(f"{filestem}")
             os.makedirs(f"{filestem}.thumbnails")
+
+    def _default_content(self):
+        if self.is_folder():
+            return {}
+
+        content = {}
+        if self.filetype == 'pdf':
+            content = {
+                'extraMetadata': {
+                    'LastFinelinerv2Color': 'Black',
+                    'LastFinelinerv2Size': '2',
+                    'LastPen': 'Finelinerv2',
+                    'LastTool': 'Finelinerv2'
+                },
+                'zoomMode': 'fitToHeight'
+            }
+        return content
 
     def __repr__(self):
         if self.uuid == '':
             uuid = 'root'
         else:
             uuid = self.uuid
-        out = f"Node(path={self.path} uuid={uuid}) ["
+        out = f"Node(path={self.path} uuid={uuid} filetype={self.filetype}) ["
         if self.children:
             out += '\n'
         for child in self.children:
