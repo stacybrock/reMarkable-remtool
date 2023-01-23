@@ -40,18 +40,19 @@ CONFIG = {}
 CONFIG['SSH_HOSTNAME'] = config['main']['reMarkableHostname']
 
 # color codes for pretty output
-class color:
-    BLUE = '\033[0;34m'
-    BOLDBLUE = '\033[1;34m'
-    CYAN='\033[0;36m'
-    BOLDCYAN='\033[1;36m'
-    GREEN = '\033[0;32m'
-    BOLDGREEN = '\033[1;32m'
-    BOLDYELLOW = '\033[1;33m'
-    RESET = '\033[0m'
+colors = {
+    'BLUE': '\033[0;34m',
+    'BOLDBLUE': '\033[1;34m',
+    'CYAN': '\033[0;36m',
+    'BOLDCYAN': '\033[1;36m',
+    'GREEN': '\033[0;32m',
+    'BOLDGREEN': '\033[1;32m',
+    'BOLDYELLOW': '\033[1;33m',
+    'RESET': '\033[0m',
+}
 
-def color_it(c, text):
-    return c + text + color.RESET
+def colored(c, text):
+    return colors[c] + text + colors['RESET']
 
 
 class reMarkable:
@@ -81,9 +82,9 @@ class reMarkable:
             raise RuntimeError('Filetype not supported. '
                                '(Valid filetypes: pdf, epub)')
 
-        print(color_it(color.CYAN, 'Copying'),
-              color_it(color.BOLDCYAN, str(filename)),
-              color_it(color.CYAN, '...'))
+        print(f"{colored('CYAN', 'Copying')} "
+              f"{colored('BOLDCYAN', str(filename))}"
+              f"{colored('CYAN', '...')}")
 
         # check if file already exists at this target path
         target = self.ct.get_node_by_path(path)
@@ -114,7 +115,7 @@ class reMarkable:
                 rendered = glob(f"{tempdir}/*")
                 self._scp(rendered, '.local/share/remarkable/xochitl')
                 self._ssh('systemctl restart xochitl')
-            print(color_it(color.GREEN, 'Success.'))
+            print(colored('GREEN', 'Success.'))
 
     def show(self, path: str):
         target = self.ct.get_node_by_path(path)
