@@ -298,6 +298,20 @@ class Node:
                 },
                 'zoomMode': 'fitToHeight'
             }
+        elif self.filetype == 'epub':
+            content = {
+                'extraMetadata': {
+                    'LastPen': 'Highlighterv2',
+                    'LastTool': 'Highlighterv2',
+                    'LastHighlighterv2Color': 'HighlighterYellow'
+                },
+                'coverPageNumber': 0,
+                'fontName': 'Noto Serif',
+                'lineHeight': 100,
+                'margins': 125,
+                'textAlignment': 'justify',
+                'textScale': 1
+            }
         return content
 
     def __repr__(self):
