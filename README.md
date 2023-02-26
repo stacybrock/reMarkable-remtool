@@ -26,12 +26,14 @@ remtool.py
 
 Usage:
   remtool.py ls [PATH]
-  remtool.py put FILE [FOLDER]
+  remtool.py put [-f] [-c | --clear] FILE [FOLDER]
   remtool.py show PATH
   remtool.py (-h | --help)
   remtool.py --version
 
 Options:
-  -h --help     Show this screen.
-  --version     Show version.
+  -f            Force overwrite if file already exists
+  -c --clear    If forcing overwrite, clear annotations on files
+  -h --help     Show this screen
+  --version     Show version
 ```

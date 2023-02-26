@@ -3,15 +3,16 @@
 
 Usage:
   remtool.py ls [PATH]
-  remtool.py put [-f] FILE [FOLDER]
+  remtool.py put [-f] [-c | --clear] FILE [FOLDER]
   remtool.py show PATH
   remtool.py (-h | --help)
   remtool.py --version
 
 Options:
   -f            Force overwrite if file already exists
-  -h --help     Show this screen.
-  --version     Show version.
+  -c --clear    If forcing overwrite, clear annotations on files
+  -h --help     Show this screen
+  --version     Show version
 """
 import configparser
 import json
@@ -63,7 +64,8 @@ class reMarkable:
         # get content tree and metadata from reMarkable
         self.ct = ContentTree(self._get_metadata())
 
-    def put(self, file: str, folder: str='', force_overwrite: bool=False):
+    def put(self, file: str, folder: str='', force_overwrite: bool=False,
+            clear_annotations: bool=False):
         # assemble params into a target path
         filename = Path(file)
         folderpath = Path(folder)
@@ -120,8 +122,7 @@ class reMarkable:
         else:
             print(colored('BOLDYELLOW',
                           f"{target.nice_type().capitalize()} already "
-                          "exists at"),
-                  path)
+                          "exists at"), path)
 
             # prompt user to confirm overwrite if -f isn't set
             if not force_overwrite:
@@ -131,7 +132,7 @@ class reMarkable:
                     print('Canceled.')
                     return
             else:
-                print(colored('BOLDYELLOW', 'Forcing overwrite...')
+                print(colored('BOLDYELLOW', 'Forcing overwrite...'))
 
             # copy file over existing one on device
             with tempfile.TemporaryDirectory(prefix='remtool_') as tempdir:
@@ -142,6 +143,11 @@ class reMarkable:
                 # delete thumbnails
                 self._ssh(f"rm .local/share/remarkable/xochitl/"
                           f"{target.uuid}.thumbnails/*")
+                # delete annotation files, if option is set
+                if clear_annotations:
+                    print(colored('BOLDYELLOW', 'Clearing annotations...'))
+                    self._ssh(f"rm .local/share/remarkable/xochitl/"
+                              f"{target.uuid}/*")
                 # now we can do the actual file copy
                 shutil.copy(filename,
                             f"{tempdir}/{target.uuid}.{target.filetype}")
@@ -478,12 +484,12 @@ class ContentTree:
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, default_help=True, version='remtool 0.1')
+    args = docopt(__doc__, default_help=True, version='remtool 0.2')
 
     reM = reMarkable(CONFIG['SSH_HOSTNAME'])
 
     if args['put']:
-        reM.put(args['FILE'], args['FOLDER'], args['-f'])
+        reM.put(args['FILE'], args['FOLDER'], args['-f'], args['--clear'])
     elif args['ls']:
         reM.ls(args['PATH'])
     elif args['show']:
