@@ -444,15 +444,31 @@ class ContentTree:
         while item_queue:
             item = item_queue.popleft()
 
+            if 'deleted' not in item['metadata']:
+                item['metadata']['deleted'] = False
+
             if (item['metadata']['deleted']
                     or item['metadata']['parent'] == 'trash'):
                 continue
 
             uuid = Path(item['filename']).stem
+
+            # check for missing metadata keys
+            # certain versions (3.2) now omit certain metadata keys when
+            # new notebooks are created
             if 'lastOpened' not in item['metadata']:
                 item['metadata']['lastOpened'] = ''
             if 'lastOpenedPage' not in item['metadata']:
                 item['metadata']['lastOpenedPage'] = 0
+            if 'modified' not in item['metadata']:
+                item['metadata']['modified'] = False
+            if 'metadatamodified' not in item['metadata']:
+                item['metadata']['metadatamodified'] = False
+            if 'synced' not in item['metadata']:
+                item['metadata']['synced'] = False
+            if 'version' not in item['metadata']:
+                item['metadata']['version'] = 0
+
             meta = Metadata(item['metadata']['deleted'],
                             item['metadata']['lastModified'],
                             item['metadata']['lastOpened'],
