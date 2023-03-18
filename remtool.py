@@ -136,17 +136,23 @@ class reMarkable:
 
             # copy file over existing one on device
             with tempfile.TemporaryDirectory(prefix='remtool_') as tempdir:
+                # render file to disk
+                target.render_to_disk(tempdir)
                 # if this is an epub, delete pre-rendered pdf on device first
                 if target.filetype == 'epub':
-                    self._ssh(f"rm .local/share/remarkable/xochitl/"
-                              f"{target.uuid}.pdf")
+                    self._ssh(
+                        f"rm -f "
+                        f".local/share/remarkable/xochitl/{target.uuid}.pdf "
+                        f".local/share/remarkable/xochitl/{target.uuid}.epubindex "
+                        f".local/share/remarkable/xochitl/{target.uuid}.pagedata "
+                    )
                 # delete thumbnails
-                self._ssh(f"rm .local/share/remarkable/xochitl/"
+                self._ssh(f"rm -f .local/share/remarkable/xochitl/"
                           f"{target.uuid}.thumbnails/*")
                 # delete annotation files, if option is set
                 if clear_annotations:
                     print(colored('BOLDYELLOW', 'Clearing annotations...'))
-                    self._ssh(f"rm .local/share/remarkable/xochitl/"
+                    self._ssh(f"rm -f .local/share/remarkable/xochitl/"
                               f"{target.uuid}/*")
                 # now we can do the actual file copy
                 shutil.copy(filename,
