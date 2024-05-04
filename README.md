@@ -9,7 +9,7 @@ A simple CLI tool for transferring files to a reMarkable 2 tablet
 - python 3.8+
 - reMarkable 2
 
-**NOTE:** This tool has only been tested with python 3.8 and reMarkable 3.0.4.
+**NOTE:** This tool has only been tested with python 3.11 and reMarkable 3.11.2.5
 
 ## Configuration
 
