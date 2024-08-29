@@ -23,7 +23,6 @@ Contributors (roughly in chronological order):
 """
 from __future__ import annotations
 
-import inspect
 import re
 import sys
 from typing import Any
@@ -34,8 +33,8 @@ from typing import Type
 from typing import Union
 from typing import cast
 
-__all__ = ["docopt", "magic_docopt", "magic", "DocoptExit"]
-__version__ = "0.8.1"
+__all__ = ["docopt", "DocoptExit"]
+__version__ = "0.9.0"
 
 
 def levenshtein_norm(source: str, target: str) -> float:
@@ -118,8 +117,8 @@ class DocoptExit(SystemExit):
     def __init__(
         self,
         message: str = "",
-        collected: list[Pattern] = None,
-        left: list[Pattern] = None,
+        collected: list[Pattern] | None = None,
+        left: list[Pattern] | None = None,
     ) -> None:
         self.collected = collected if collected is not None else []
         self.left = left if left is not None else []
@@ -187,7 +186,7 @@ class LeafPattern(Pattern):
         return [self] if not types or type(self) in types else []
 
     def match(
-        self, left: list[LeafPattern], collected: list[Pattern] = None
+        self, left: list[LeafPattern], collected: list[Pattern] | None = None
     ) -> tuple[bool, list[LeafPattern], list[Pattern]]:
         collected = [] if collected is None else collected
         increment: Any | None = None
@@ -224,7 +223,7 @@ class BranchPattern(Pattern):
     def __init__(self, *children) -> None:
         self.children = list(children)
 
-    def match(self, left: list[Pattern], collected: list[Pattern] = None) -> Any:
+    def match(self, left: list[Pattern], collected: list[Pattern] | None = None) -> Any:
         raise NotImplementedError  # pragma: no cover
 
     def fix(self) -> "BranchPattern":
@@ -356,7 +355,7 @@ class Required(BranchPattern):
 
 
 class NotRequired(BranchPattern):
-    def match(self, left: list[Pattern], collected: list[Pattern] = None) -> Any:
+    def match(self, left: list[Pattern], collected: list[Pattern] | None = None) -> Any:
         collected = [] if collected is None else collected
         for pattern in self.children:
             _, left, collected = pattern.match(left, collected)
@@ -369,7 +368,7 @@ class OptionsShortcut(NotRequired):
 
 
 class OneOrMore(BranchPattern):
-    def match(self, left: list[Pattern], collected: list[Pattern] = None) -> Any:
+    def match(self, left: list[Pattern], collected: list[Pattern] | None = None) -> Any:
         assert len(self.children) == 1
         collected = [] if collected is None else collected
         original_collected = collected
@@ -389,7 +388,7 @@ class OneOrMore(BranchPattern):
 
 
 class Either(BranchPattern):
-    def match(self, left: list[Pattern], collected: list[Pattern] = None) -> Any:
+    def match(self, left: list[Pattern], collected: list[Pattern] | None = None) -> Any:
         collected = [] if collected is None else collected
         outcomes = []
         for pattern in self.children:
@@ -841,14 +840,13 @@ class ParsedOptions(dict):
 
 
 def docopt(
-    docstring: str | None = None,
+    docstring: str,
     argv: list[str] | str | None = None,
     default_help: bool = True,
     version: Any = None,
     options_first: bool = False,
-    more_magic: bool = False,
 ) -> ParsedOptions:
-    """Parse `argv` based on command-line interface described in `doc`.
+    """Parse `argv` based on command-line interface described in `docstring`.
 
     `docopt` creates your command-line interface based on its
     description that you pass as `docstring`. Such description can contain
@@ -857,11 +855,11 @@ def docopt(
 
     Parameters
     ----------
-    docstring : str (default: first __doc__ in parent scope)
+    docstring : str
         Description of your command-line interface.
-    argv : list of str, optional
+    argv : list of str or str, optional
         Argument vector to be parsed. sys.argv[1:] is used if not
-        provided.
+        provided. If str is passed, the string is split on whitespace.
     default_help : bool (default: True)
         Set to False to disable automatic help on -h or --help
         options.
@@ -871,10 +869,6 @@ def docopt(
     options_first : bool (default: False)
         Set to True to require options precede positional arguments,
         i.e. to forbid options and positional arguments intermix.
-    more_magic : bool (default: False)
-        Try to be extra-helpful; pull results into globals() of caller as 'arguments',
-        offer advanced pattern-matching and spellcheck.
-        Also activates if `docopt` aliased to a name containing 'magic'.
 
     Returns
     -------
@@ -906,48 +900,8 @@ def docopt(
      '<port>': '80',
      'serial': False,
      'tcp': True}
-
     """
     argv = sys.argv[1:] if argv is None else argv
-    maybe_frame = inspect.currentframe()
-    if maybe_frame:
-        parent_frame = doc_parent_frame = magic_parent_frame = maybe_frame.f_back
-    if not more_magic:  # make sure 'magic' isn't in the calling name
-        while not more_magic and magic_parent_frame:
-            imported_as = {
-                v: k
-                for k, v in magic_parent_frame.f_globals.items()
-                if hasattr(v, "__name__") and v.__name__ == docopt.__name__
-            }.get(docopt)
-            if imported_as and "magic" in imported_as:
-                more_magic = True
-            else:
-                magic_parent_frame = magic_parent_frame.f_back
-    if not docstring:  # go look for one, if none exists, raise Exception
-        while not docstring and doc_parent_frame:
-            docstring = doc_parent_frame.f_locals.get("__doc__")
-            if not docstring:
-                doc_parent_frame = doc_parent_frame.f_back
-        if not docstring:
-            raise DocoptLanguageError(
-                "Either __doc__ must be defined in the scope of a parent "
-                "or passed as the first argument."
-            )
-    output_value_assigned = False
-    if more_magic and parent_frame:
-        import dis
-
-        instrs = dis.get_instructions(parent_frame.f_code)
-        for instr in instrs:
-            if instr.offset == parent_frame.f_lasti:
-                break
-        assert instr.opname.startswith("CALL_")
-        MAYBE_STORE = next(instrs)
-        if MAYBE_STORE and (
-            MAYBE_STORE.opname.startswith("STORE")
-            or MAYBE_STORE.opname.startswith("RETURN")
-        ):
-            output_value_assigned = True
     sections = parse_docstring_sections(docstring)
     lint_docstring(sections)
     DocoptExit.usage = sections.usage_header + sections.usage_body
@@ -961,23 +915,11 @@ def docopt(
         options_shortcut.children = [
             opt for opt in options if opt not in pattern_options
         ]
-    parsed_arg_vector = parse_argv(
-        Tokens(argv), list(options), options_first, more_magic
-    )
+    parsed_arg_vector = parse_argv(Tokens(argv), list(options), options_first)
     extras(default_help, version, parsed_arg_vector, docstring)
     matched, left, collected = pattern.fix().match(parsed_arg_vector)
     if matched and left == []:
-        output_obj = ParsedOptions(
-            (a.name, a.value) for a in (pattern.flat() + collected)
-        )
-        target_parent_frame = parent_frame or magic_parent_frame or doc_parent_frame
-        if more_magic and target_parent_frame and not output_value_assigned:
-            if not target_parent_frame.f_globals.get("arguments"):
-                target_parent_frame.f_globals["arguments"] = output_obj
-        return output_obj
+        return ParsedOptions((a.name, a.value) for a in (pattern.flat() + collected))
     if left:
         raise DocoptExit(f"Warning: found unmatched (duplicate?) arguments {left}")
     raise DocoptExit(collected=collected, left=left)
-
-
-magic = magic_docopt = docopt
