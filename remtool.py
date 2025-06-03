@@ -3,7 +3,7 @@
 
 Usage:
   remtool.py ls [PATH]
-  remtool.py put [-f] [-c | --clear] FILE [FOLDER]
+  remtool.py put [-f] [-c | --clear] FILE ... [FOLDER]
   remtool.py show PATH
   remtool.py (-h | --help)
   remtool.py --version
@@ -65,7 +65,7 @@ class reMarkable:
         self.ct = ContentTree(self._get_metadata())
 
     def put(self, file: str, folder: str='', force_overwrite: bool=False,
-            clear_annotations: bool=False):
+            clear_annotations: bool=False, batch_mode: bool=False):
         # assemble params into a target path
         filename = Path(file)
         folderpath = Path(folder)
@@ -117,7 +117,8 @@ class reMarkable:
                             f"{tempdir}/{new_node.uuid}{filename.suffix}")
                 rendered = glob(f"{tempdir}/*")
                 self._scp(rendered, '.local/share/remarkable/xochitl')
-                self._ssh('systemctl restart xochitl')
+                if not batch_mode:
+                    self.restart_xochitl()
             print(colored('GREEN', 'Success.'))
         else:
             print(colored('BOLDYELLOW',
@@ -159,7 +160,8 @@ class reMarkable:
                             f"{tempdir}/{target.uuid}.{target.filetype}")
                 rendered = glob(f"{tempdir}/*")
                 self._scp(rendered, '.local/share/remarkable/xochitl')
-                self._ssh('systemctl restart xochitl')
+                if not batch_mode:
+                    self.restart_xochitl()
             print(colored('GREEN', 'Success.'))
 
     def show(self, path: str):
@@ -191,6 +193,9 @@ class reMarkable:
 
         for child in target.children:
             print(child.path)
+
+    def restart_xochitl(self):
+        self._ssh('systemctl restart xochitl')
 
     def _ssh(self, cmd: str, pipe_in: bool=False):
         args = ['ssh', f"root@{self.hostname}"]
@@ -506,12 +511,21 @@ class ContentTree:
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, default_help=True, version='remtool 0.2')
+    args = docopt(__doc__, default_help=True, version='remtool 0.3')
 
     reM = reMarkable(CONFIG['SSH_HOSTNAME'])
 
     if args['put']:
-        reM.put(args['FILE'], args['FOLDER'], args['-f'], args['--clear'])
+        # if multiple FILE arguments have been given, check if the last exists
+        # as a folder on the target rM
+        if args['FOLDER'] is None and len(args['FILE']) > 1:
+            if (args['FILE'][-1] == '.'
+                    or reM.ct.get_node_by_path(args['FILE'][-1])):
+                args['FOLDER'] = args['FILE'].pop()
+
+        for file in args['FILE']:
+            reM.put(file, args['FOLDER'], args['-f'], args['--clear'], True)
+        reM.restart_xochitl()
     elif args['ls']:
         reM.ls(args['PATH'])
     elif args['show']:

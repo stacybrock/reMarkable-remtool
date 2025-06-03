@@ -1,15 +1,15 @@
 # reMarkable-remtool
 
-A simple CLI tool for transferring files to a reMarkable 2 tablet
-
-**WARNING! This codebase is very unstable!**
+A simple CLI tool for transferring files to a reMarkable 2 or reMarkable Paper Pro tablet
 
 ## Requirements
 
 - python 3.8+
-- reMarkable 2
+- reMarkable 2 or reMarkable Paper Pro
 
-**NOTE:** This tool has only been tested with python 3.11 and reMarkable 3.11+
+**NOTE:** As of May 2025, this tool has been tested with python 3.11 and reMarkable 3.11.* through 3.19.*
+
+**Developer Mode** and SSH must be enabled on the target device for this tool to work.
 
 ## Configuration
 
@@ -26,7 +26,7 @@ remtool.py
 
 Usage:
   remtool.py ls [PATH]
-  remtool.py put [-f] [-c | --clear] FILE [FOLDER]
+  remtool.py put [-f] [-c | --clear] FILE ... [FOLDER]
   remtool.py show PATH
   remtool.py (-h | --help)
   remtool.py --version
