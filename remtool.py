@@ -238,7 +238,7 @@ class reMarkable:
         return True
 
     def _get_metadata(self):
-        cmd = '''
+        cmd = r'''
 shopt -s nullglob
 metafiles=(.local/share/remarkable/xochitl/*.metadata)
 numfiles=${#metafiles[@]}
