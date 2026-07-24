@@ -249,7 +249,7 @@ for file in ${metafiles[@]}
 do
     uuid="${file%.*}"
     tmp=`grep fileType $uuid.content`
-    if [[ $tmp =~ :\ \\"(.+)\\", ]]; then
+    if [[ $tmp =~ :\ \"(.+)\", ]]; then
         filetype=${BASH_REMATCH[1]}
     else
         filetype=""

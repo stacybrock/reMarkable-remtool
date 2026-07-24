@@ -7,7 +7,7 @@ A simple CLI tool for transferring files to a reMarkable 2 or reMarkable Paper P
 - python 3.8+
 - reMarkable 2 or reMarkable Paper Pro
 
-**NOTE:** As of May 2025, this tool has been tested with python 3.11 and reMarkable 3.11.* through 3.19.*
+**NOTE:** As of July 2026, this tool has been tested with python 3.11+ and supports reMarkable 3.27. Older versions of the reMarkable software are no longer supported in remtool version 0.4.
 
 **Developer Mode** and SSH must be enabled on the target device for this tool to work.
 
