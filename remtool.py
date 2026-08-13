@@ -511,7 +511,7 @@ class ContentTree:
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, default_help=True, version='remtool 0.3')
+    args = docopt(__doc__, default_help=True, version='remtool 0.4')
 
     reM = reMarkable(CONFIG['SSH_HOSTNAME'])
 
@@ -522,6 +522,11 @@ if __name__ == "__main__":
             if (args['FILE'][-1] == '.'
                     or reM.ct.get_node_by_path(args['FILE'][-1])):
                 args['FOLDER'] = args['FILE'].pop()
+        elif args['FOLDER'] is None and len(args['FILE']) == 1:
+            print(colored('BOLDYELLOW',
+                          'Warning, no folder specified, '
+                          'copying to root folder...'))
+            args['FOLDER'] = '.'
 
         for file in args['FILE']:
             reM.put(file, args['FOLDER'], args['-f'], args['--clear'], True)
